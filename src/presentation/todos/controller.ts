@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { json } from "stream/consumers";
 const todos = [
   { id: 1, todo: "Buy milk", completedAt: new Date() },
   { id: 2, todo: "Buy beers", completedAt: null },
