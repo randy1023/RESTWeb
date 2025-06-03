@@ -1,85 +1,58 @@
 import { Request, Response } from "express";
-import { prisma } from "../../data/postgres";
 import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
+import {
+  TodoRepository,
+  GetTodos,
+  GetTodo,
+  CreateTodo,
+  UpdateTodo,
+  DeleteTodo,
+} from "../../domain";
 export class TodosController {
   //* DI
-  constructor() {}
+  constructor(private readonly todoRepository: TodoRepository) {}
 
-  public getTodos = async (req: Request, res: Response) => {
-    const todos = await prisma.todo.findMany();
-    res.json(todos);
-    return;
+  public getTodos = (req: Request, res: Response) => {
+    new GetTodos(this.todoRepository)
+      .execute()
+      .then((todos) => res.json(todos))
+      .catch((error) => res.status(400).json({ error }));
   };
-  public getTodoById = async (req: Request, res: Response) => {
+  public getTodoById = (req: Request, res: Response) => {
     const id = +req.params.id;
-    if (isNaN(id)) {
-      res.status(400).json({ error: "Id argument is not a number" });
-      return;
-    }
-    const todo = await prisma.todo.findUnique({
-      where: {
-        id,
-      },
-    });
-    todo
-      ? res.json(todo)
-      : res.status(404).json({ error: `ID ${id} not found` });
+    new GetTodo(this.todoRepository)
+      .execute(id)
+      .then((todo) => res.json(todo))
+      .catch((error) => res.status(400).json({ error }));
   };
-  public createTodo = async (req: Request, res: Response) => {
+  public createTodo = (req: Request, res: Response) => {
     const [error, createTodoDto] = CreateTodoDto.create(req.body);
-
     if (error) {
       res.status(400).json({ error });
       return;
     }
-    const todo = await prisma.todo.create({
-      data: createTodoDto!,
-    });
-
-    res.json(todo);
+    new CreateTodo(this.todoRepository)
+      .execute(createTodoDto!)
+      .then((todo) => res.json(todo))
+      .catch((error) => res.status(400).json({ error }));
   };
-  public updateTodo = async (req: Request, res: Response) => {
+  public updateTodo = (req: Request, res: Response) => {
     const id = +req.params.id;
     const [error, updateTodoDto] = UpdateTodoDto.create({ id, ...req.body });
-    if (error) return res.status(400).json({ error });
-    const todoExist = await prisma.todo.findUnique({
-      where: {
-        id: updateTodoDto!.id,
-      },
-    });
-    if (!todoExist) {
-      res.status(400).json({ error: `todo with ${id} not found` });
+    if (error) {
+      res.status(400).json({ error });
       return;
     }
-
-    const updateTodo = await prisma.todo.update({
-      where: {
-        id: updateTodoDto!.id,
-      },
-      data: updateTodoDto!.values,
-    });
-    res.json(updateTodo);
+    new UpdateTodo(this.todoRepository)
+      .execute(updateTodoDto!)
+      .then((todo) => res.json(todo))
+      .catch((error) => res.status(400).json({ error }));
   };
-  public deleteTodoById = async (req: Request, res: Response) => {
+  public deleteTodoById = (req: Request, res: Response) => {
     const id = +req.params.id;
-    if (isNaN(id)) {
-      res.status(400).json({ error: "Id argument is not a number" });
-      return;
-    }
-    const todoExist = await prisma.todo.findUnique({
-      where: {
-        id,
-      },
-    });
-    if (!todoExist) {
-      res.status(400).json({ error: `todo with ${id} not found` });
-      return;
-    }
-    const todoDeleted = await prisma.todo.delete({
-      where: {
-        id,
-      },
-    });
-    res.json(todoDeleted);
+    new DeleteTodo(this.todoRepository)
+      .execute(id)
+      .then((todo) => res.json(todo))
+      .catch((error) => res.status(400).json({ error }));
   };
 }
