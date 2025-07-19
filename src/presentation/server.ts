@@ -1,13 +1,13 @@
 import express, { Router } from "express";
 import path from "path";
-import { AppRoutes } from "./routes";
 interface Options {
   port: number;
   router: Router;
   public_path?: string;
 }
 export class Server {
-  private app = express();
+  public readonly app = express();
+  private serverlistener?: any;
   private readonly port: number;
   private readonly public_path: string;
   private readonly routes: Router;
@@ -20,8 +20,8 @@ export class Server {
 
   async start() {
     //* Middlewares
-    this.app.use(express.json());// permite serializar a un json todas las request
-    this.app.use(express.urlencoded({ extended: true }));// permite x-www-form-urlencode
+    this.app.use(express.json()); // permite serializar a un json todas las request
+    this.app.use(express.urlencoded({ extended: true })); // permite x-www-form-urlencode
     //* Public Folder
     this.app.use(express.static(this.public_path));
 
@@ -36,8 +36,12 @@ export class Server {
       return;
     });
 
-    this.app.listen(this.port, () => {
+    this.serverlistener = this.app.listen(this.port, () => {
       console.log(`Server running on port ${this.port}`);
     });
+  }
+
+  public close() {
+    this.serverlistener?.close();
   }
 }
